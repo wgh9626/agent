@@ -13,12 +13,12 @@ spec:
         - cat
       tty: true
     - name: kaniko
-      image: gcr.io/kaniko-project/executor:latest
+      image: martizih/kaniko:v1.27.1
       command:
-        - /busybox/cat
+        - /kaniko/executor
       tty: true
     - name: git
-      image: bitnami/git:2.45.1
+      image: bitnami/git:latest
       command:
         - /bin/sh
         - -c
