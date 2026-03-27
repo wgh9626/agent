@@ -28,6 +28,43 @@
 
 ---
 
+---
+
+## 快速开始
+
+如果你想最快理解这套 Agent，建议按下面顺序走：
+
+### 第一步：先看契约，不要先看脚本细节
+- `docs/请求文件说明.md`
+- `docs/release-request字段字典.md`
+- `docs/release-result字段字典.md`
+
+原因很简单：先知道“输入是什么、输出是什么”，再去看脚本，脑子不容易打结。
+
+### 第二步：再看执行链
+- `docs/脚本说明.md`
+- `scripts/run_release_from_request.sh`
+- `scripts/release.sh`
+
+重点看：
+- 请求 JSON 怎么被解析
+- 参数怎么一路传进执行脚本
+- 结果 JSON 最终怎么吐出来
+
+### 第三步：再看协作边界
+- `docs/职责说明.md`
+- `docs/交互流程.md`
+- `docs/上游Agent快速接入.md`
+
+这一段是防止上下游 Agent 互相越位。
+
+### 第四步：最后看参考资料
+- `references/first-release-checklist.md`
+- `references/first-release-runbook.md`
+- `references/release-config-reference.md`
+
+如果你准备第一次试发布，这三份最值得先看。
+
 ## 建议先看什么
 
 ### 1. 先看全貌

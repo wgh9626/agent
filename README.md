@@ -93,6 +93,45 @@ rollout / healthcheck 验证
 
 ---
 
+---
+
+## 快速开始
+
+如果你只想先快速上手，不想一头扎进整片文档森林，可以按这个顺序：
+
+### 1. 先看仓库结构
+- `README.md`
+- `java-cicd-agent/README.md`
+
+先搞清楚三部分分别负责什么，别一上来就把服务仓库、Agent 仓库、GitOps 仓库看成同一个锅。
+
+### 2. 再看发布契约
+- `java-cicd-agent/docs/请求文件说明.md`
+- `java-cicd-agent/docs/release-request字段字典.md`
+- `java-cicd-agent/docs/release-result字段字典.md`
+
+这一步最关键。先知道请求怎么写、结果怎么读，再去碰脚本，不然容易文档看懂了，参数却传歪。
+
+### 3. 再看脚本入口
+- `java-cicd-agent/docs/脚本说明.md`
+- `java-cicd-agent/scripts/run_release_from_request.sh`
+- `java-cicd-agent/scripts/release.sh`
+
+先理解入口链路，再决定你是要走 Direct 还是 GitOps。
+
+### 4. 再看服务接入样例
+- `demo-java-service/Jenkinsfile`
+- `demo-java-service/ci/release-config.yaml`
+- `demo-java-service/pom.xml`
+
+这部分是“应用侧怎么配合 Agent”。
+
+### 5. 最后看 GitOps 落点
+- `demo-java-service-gitops/apps/test/deployment.yaml`
+- `demo-java-service-gitops/apps/test/application.yaml`
+
+这部分是“镜像最终落到哪里、怎么被 GitOps 接住”。
+
 ## 如果你第一次打开这个仓库
 
 建议按下面顺序读：
