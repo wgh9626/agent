@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: demo-java-service-test
+  name: agent
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://git.example.com/team/demo-java-service-gitops.git
+    repoURL: https://github.com/wgh9626/agent
     targetRevision: main
-    path: apps/test
+    path: demo-java-service-gitops/apps/test
   destination:
     server: https://kubernetes.default.svc
     namespace: test

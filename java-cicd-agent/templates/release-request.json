@@ -1,24 +1,24 @@
 {
   "service_name": "demo-java-service",
-  "git_repo": "git@example.com:team/demo-java-service.git",
-  "git_ref": "feature/order-api",
-  "build_path": ".",
-  "dockerfile_path": "./Dockerfile",
-  "image_repo": "harbor.example.com/test/demo-java-service",
-  "image_tag": "20260326-1045-abcd123",
+  "git_repo": "https://github.com/wgh9626/agent.git",
+  "git_ref": "main",
+  "build_path": "demo-java-service",
+  "dockerfile_path": "demo-java-service/Dockerfile",
+  "image_repo": "acr-dh-registry.eu-central-1.cr.aliyuncs.com/agent/demo-java-service",
+  "image_tag": "20260327-demo",
   "deploy_mode": "gitops",
   "manifest_path": "",
-  "gitops_repo": "git@example.com:team/demo-java-service-gitops.git",
+  "gitops_repo": "https://github.com/wgh9626/agent.git",
   "gitops_branch": "main",
-  "gitops_manifest_path": "apps/test/deployment.yaml",
+  "gitops_manifest_path": "demo-java-service-gitops/apps/test/deployment.yaml",
   "deployment_name": "demo-java-service",
   "container_name": "demo-java-service",
   "namespace": "test",
   "healthcheck_url": "http://demo-java-service.test.svc.cluster.local/actuator/health",
-  "argocd_app_name": "demo-java-service-test",
+  "argocd_app_name": "agent",
   "rollback_on_fail": true,
   "build_notes": [
-    "需要 JDK 17",
-    "使用 Maven profile: test"
+    "真实环境使用 Jenkins + Harbor + Argo CD + k3s",
+    "GitOps manifest 使用仓库内完整路径"
   ]
 }
