@@ -60,7 +60,10 @@ spec:
       steps {
         checkout scm
         container('git') {
-          sh 'git checkout ${GIT_REF}'
+          sh '''
+            git config --global --add safe.directory "${WORKSPACE}"
+            git checkout "${GIT_REF}"
+          '''
         }
       }
     }
