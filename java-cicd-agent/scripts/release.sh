@@ -53,7 +53,7 @@ run_step() {
   stage_reached="$step_name"
   log_file=$(mktemp)
   if "$@" >"$log_file" 2>&1; then
-    cat "$log_file"
+    cat "$log_file" >&2
     LAST_LOG="$(tail -n 20 "$log_file" || true)"
     rm -f "$log_file"
     return 0
