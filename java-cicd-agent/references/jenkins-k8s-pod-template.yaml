@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    jenkins-agent: kaniko
+spec:
+  serviceAccountName: jenkins
+  restartPolicy: Never
+  volumes:
+    - name: workspace-volume
+      emptyDir: {}
+    - name: kaniko-docker-config
+      secret:
+        secretName: harbor-docker-config
+        items:
+          - key: config.json
+            path: config.json
+  containers:
+    - name: maven
+      image: maven:3.9.9-eclipse-temurin-17
+      command: ['cat']
+      tty: true
+      volumeMounts:
+        - name: workspace-volume
+          mountPath: /home/jenkins/agent
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:latest
+      command: ['/busybox/cat']
+      tty: true
+      volumeMounts:
+        - name: workspace-volume
+          mountPath: /workspace
+        - name: kaniko-docker-config
+          mountPath: /kaniko/.docker

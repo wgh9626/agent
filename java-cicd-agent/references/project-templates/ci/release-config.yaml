@@ -1,0 +1,8 @@
+service_name: demo-service
+build_path: .
+dockerfile_path: ./Dockerfile
+image_repo: harbor.example.com/test/demo-service
+manifest_path: ./k8s/test
+namespace: test
+label_selector: app=demo-service
+healthcheck_url: http://demo-service.test.svc.cluster.local/actuator/health

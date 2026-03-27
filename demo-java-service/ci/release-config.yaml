@@ -1,0 +1,11 @@
+service_name: demo-java-service
+build_path: .
+dockerfile_path: ./Dockerfile
+image_repo: harbor.example.com/test/demo-java-service
+gitops_repo: https://git.example.com/team/demo-java-service-gitops.git
+gitops_branch: main
+gitops_manifest: apps/test/deployment.yaml
+argocd_app: demo-java-service-test
+image_tag_strategy: git-build-number
+harbor_config_json_credentials_id: harbor-docker-config
+gitops_git_credentials_id: gitops-git

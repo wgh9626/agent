@@ -1,0 +1,131 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    ansiColor('xterm')
+  }
+
+  parameters {
+    string(name: 'GIT_REF', defaultValue: 'main', description: 'Git branch/tag/commit')
+  }
+
+  environment {
+    SERVICE_NAME = ''
+    BUILD_PATH = '.'
+    DOCKERFILE_PATH = './Dockerfile'
+    IMAGE_REPO = ''
+    IMAGE_TAG = ''
+    IMAGE_TAG_STRATEGY = 'git-build-number'
+    GITOPS_REPO = ''
+    GITOPS_BRANCH = 'main'
+    GITOPS_MANIFEST = ''
+    HARBOR_CONFIG_JSON_CREDENTIALS_ID = 'harbor-docker-config'
+    GITOPS_GIT_CREDENTIALS_ID = 'gitops-git'
+    ARGOCD_APP = ''
+  }
+
+  stages {
+    stage('Checkout Source') {
+      steps {
+        checkout scm
+        sh 'git checkout ${GIT_REF}'
+      }
+    }
+
+    stage('Load Config') {
+      steps {
+        script {
+          def cfg = readYaml file: 'ci/release-config.yaml'
+          env.SERVICE_NAME = cfg.service_name
+          env.BUILD_PATH = cfg.build_path ?: '.'
+          env.DOCKERFILE_PATH = cfg.dockerfile_path ?: './Dockerfile'
+          env.IMAGE_REPO = cfg.image_repo ?: ''
+          env.GITOPS_REPO = cfg.gitops_repo ?: ''
+          env.GITOPS_BRANCH = cfg.gitops_branch ?: 'main'
+          env.GITOPS_MANIFEST = cfg.gitops_manifest ?: ''
+          env.ARGOCD_APP = cfg.argocd_app ?: ''
+          env.IMAGE_TAG_STRATEGY = cfg.image_tag_strategy ?: 'git-build-number'
+          env.HARBOR_CONFIG_JSON_CREDENTIALS_ID = cfg.harbor_config_json_credentials_id ?: 'harbor-docker-config'
+          env.GITOPS_GIT_CREDENTIALS_ID = cfg.gitops_git_credentials_id ?: 'gitops-git'
+
+          def shortSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+          if (env.IMAGE_TAG_STRATEGY == 'git-sha') {
+            env.IMAGE_TAG = "git-${shortSha}"
+          } else if (env.IMAGE_TAG_STRATEGY == 'git-build-number') {
+            env.IMAGE_TAG = "git-${shortSha}-${env.BUILD_NUMBER}"
+          } else {
+            env.IMAGE_TAG = "build-${env.BUILD_NUMBER}"
+          }
+        }
+      }
+    }
+
+    stage('Validate Config') {
+      steps {
+        sh '''
+          test -n "$SERVICE_NAME"
+          test -n "$IMAGE_REPO"
+          test -n "$GITOPS_REPO"
+          test -n "$GITOPS_MANIFEST"
+        '''
+      }
+    }
+
+    stage('Build Jar') {
+      steps {
+        sh 'mvn -f ${BUILD_PATH}/pom.xml clean package -DskipTests'
+      }
+    }
+
+    stage('Kaniko Build & Push') {
+      steps {
+        withCredentials([file(credentialsId: env.HARBOR_CONFIG_JSON_CREDENTIALS_ID, variable: 'DOCKERCFG')]) {
+          sh '''
+            mkdir -p /kaniko/.docker
+            cp "$DOCKERCFG" /kaniko/.docker/config.json
+            /kaniko/executor \
+              --context "${WORKSPACE}" \
+              --dockerfile "${DOCKERFILE_PATH}" \
+              --destination "${IMAGE_REPO}:${IMAGE_TAG}"
+          '''
+        }
+      }
+    }
+
+    stage('Update GitOps Repo') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: env.GITOPS_GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+          sh '''
+            rm -rf gitops-repo
+            git clone -b "${GITOPS_BRANCH}" "${GITOPS_REPO}" gitops-repo
+            cd gitops-repo
+            chmod +x ../ci/scripts/update_gitops_image.sh
+            UPDATE_OUTPUT=$(../ci/scripts/update_gitops_image.sh "${GITOPS_MANIFEST}" "${IMAGE_REPO}" "${IMAGE_TAG}")
+            echo "$UPDATE_OUTPUT"
+            if echo "$UPDATE_OUTPUT" | grep -q 'No manifest change detected'; then
+              echo 'No GitOps manifest change; skip commit and push'
+              exit 0
+            fi
+            git config user.name "jenkins"
+            git config user.email "jenkins@example.local"
+            git add "${GITOPS_MANIFEST}"
+            git diff --cached --quiet && {
+              echo 'No staged changes; skip commit and push'
+              exit 0
+            }
+            git commit -m "release(${SERVICE_NAME}): update image to ${IMAGE_TAG}"
+            git push
+          '''
+        }
+      }
+    }
+
+    stage('Wait for Argo CD Sync') {
+      steps {
+        sh 'chmod +x ci/scripts/check_argocd_app.sh && ci/scripts/check_argocd_app.sh "${ARGOCD_APP}" 300'
+      }
+    }
+  }
+}

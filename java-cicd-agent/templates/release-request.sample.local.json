@@ -1,0 +1,19 @@
+{
+  "service_name": "demo-java-service",
+  "git_repo": "https://example.invalid/demo-java-service.git",
+  "git_ref": "main",
+  "build_path": ".",
+  "dockerfile_path": "./Dockerfile",
+  "image_repo": "harbor.example.com/test/demo-java-service",
+  "image_tag": "test-tag",
+  "deploy_mode": "gitops",
+  "gitops_repo": "https://example.invalid/demo-java-service-gitops.git",
+  "gitops_branch": "main",
+  "gitops_manifest_path": "apps/test/deployment.yaml",
+  "deployment_name": "demo-java-service",
+  "container_name": "demo-java-service",
+  "namespace": "test",
+  "healthcheck_url": "http://demo-java-service.test.svc.cluster.local/actuator/health",
+  "rollback_on_fail": true,
+  "argocd_app_name": "demo-java-service-test"
+}

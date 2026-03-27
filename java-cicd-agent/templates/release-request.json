@@ -1,0 +1,24 @@
+{
+  "service_name": "demo-java-service",
+  "git_repo": "git@example.com:team/demo-java-service.git",
+  "git_ref": "feature/order-api",
+  "build_path": ".",
+  "dockerfile_path": "./Dockerfile",
+  "image_repo": "harbor.example.com/test/demo-java-service",
+  "image_tag": "20260326-1045-abcd123",
+  "deploy_mode": "gitops",
+  "manifest_path": "",
+  "gitops_repo": "git@example.com:team/demo-java-service-gitops.git",
+  "gitops_branch": "main",
+  "gitops_manifest_path": "apps/test/deployment.yaml",
+  "deployment_name": "demo-java-service",
+  "container_name": "demo-java-service",
+  "namespace": "test",
+  "healthcheck_url": "http://demo-java-service.test.svc.cluster.local/actuator/health",
+  "argocd_app_name": "demo-java-service-test",
+  "rollback_on_fail": true,
+  "build_notes": [
+    "需要 JDK 17",
+    "使用 Maven profile: test"
+  ]
+}

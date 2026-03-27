@@ -1,0 +1,12 @@
+service_name: demo-service
+git_repo: git@git.example.com:team/demo-service.git
+git_ref: main
+build_path: .
+dockerfile_path: ./Dockerfile
+image_repo: harbor.example.com/test/demo-service
+manifest_path: ./k8s/test
+namespace: test
+deployment_name: demo-service
+label_selector: app=demo-service
+healthcheck_url: http://demo-service.test.svc.cluster.local/actuator/health
+rollback_on_fail: true

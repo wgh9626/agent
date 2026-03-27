@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-java-service-config
+  namespace: test
+data:
+  SPRING_PROFILES_ACTIVE: test

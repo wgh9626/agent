@@ -1,0 +1,17 @@
+{
+  "service_name": "demo-java-service",
+  "git_ref": "feature/order-api",
+  "image": "harbor.example.com/test/demo-java-service:20260326-1045-abcd123",
+  "deploy_mode": "gitops",
+  "namespace": "test",
+  "stage_reached": "verify",
+  "status": "success",
+  "build_result": "success",
+  "image_push_result": "success",
+  "deploy_result": "success",
+  "rollout_result": "success",
+  "health_check_result": "UP",
+  "rollback_performed": false,
+  "argocd_app": "demo-java-service-test",
+  "next_action": "none"
+}

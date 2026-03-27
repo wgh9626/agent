@@ -1,0 +1,18 @@
+{
+  "service_name": "demo-java-service",
+  "git_ref": "feature/order-api",
+  "image": "harbor.example.com/test/demo-java-service:20260326-1045-abcd123",
+  "deploy_mode": "gitops",
+  "namespace": "test",
+  "stage_reached": "build",
+  "status": "failed",
+  "build_result": "failed",
+  "image_push_result": "not_started",
+  "deploy_result": "not_started",
+  "rollout_result": "not_started",
+  "health_check_result": "NOT_CHECKED",
+  "rollback_performed": false,
+  "next_action": "修复编译错误后重新发布",
+  "error_summary": "Maven 构建失败",
+  "error_excerpt": "[ERROR] cannot find symbol ..."
+}
