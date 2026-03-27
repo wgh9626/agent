@@ -13,7 +13,7 @@ spec:
         - cat
       tty: true
     - name: kaniko
-      image: martizih/kaniko:v1.27.1
+      image: martizih/kaniko:v1.27.1-debug
       command:
         - /bin/sh
         - -c
