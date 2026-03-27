@@ -1,26 +1,45 @@
 # Java CI/CD Agent
 
-这是一个用于 Java 服务构建、打包、镜像发布、部署与验证的 Agent 骨架。
+这是一个用于 Java 服务构建、镜像发布、部署验证与结构化结果输出的 Agent 骨架。
 
-它的设计目标不是“什么都做”，而是把职责边界划清：
+它的目标不是“把所有平台能力都堆上来”，而是先把职责边界和交付链路收清楚：
 
-- 上游 Java 代码 Agent 负责写业务代码
-- Java CI/CD Agent 负责交付与发布
+- 上游 Java 代码 Agent 负责源码与可发布版本
+- Java CI/CD Agent 负责构建、发布、验证与结果返回
 
 ---
 
-## 建议阅读顺序
+## 这个 Agent 解决什么问题
 
-### 1. 快速理解全貌
+很多发布方案的问题不是没有脚本，而是契约漂移：
+
+- 文档说一种口径
+- JSON 模板长另一种口径
+- 脚本实际又吃第三种口径
+
+最后谁都觉得自己没错，但链路一跑就开始互相甩锅。
+
+这个 Agent 的核心目标就是把下面几件事统一起来：
+
+- 请求文件怎么写
+- 脚本入口怎么接
+- 发布结果怎么返回
+- 上下游 Agent 的职责怎么划分
+
+---
+
+## 建议先看什么
+
+### 1. 先看全貌
 - `docs/首页摘要.md`
 - `docs/架构图.md`
 - `docs/调用链图.md`
 - `docs/术语表.md`
 - `docs/文档导航.md`
 
-适合第一次进入项目的人，先建立全局认识。
+适合先建立整体认知。
 
-### 2. 理解职责与协作边界
+### 2. 再看职责边界
 - `docs/职责说明.md`
 - `docs/交互流程.md`
 - `docs/状态枚举.md`
@@ -29,12 +48,11 @@
 - `docs/上游Agent快速接入.md`
 
 适合理解：
-- 上下游 Agent 分工
-- 发布流程怎么交接
-- 状态如何表达
-- Agent 应该怎么行动
+- 上下游如何分工
+- 谁该交什么
+- 谁不该越界去做什么
 
-### 3. 真正接入发布流程
+### 3. 真正接发布契约
 - `docs/请求文件说明.md`
 - `docs/脚本说明.md`
 - `docs/release-request字段字典.md`
@@ -46,9 +64,9 @@
 
 适合理解：
 - 请求参数怎么传
-- 脚本怎么串起来
-- YAML 怎么安全改
-- release-config 怎么写
+- 结果字段怎么读
+- 脚本链怎么串
+- YAML 与发布配置怎么组织
 
 ### 4. 如果你在搭平台
 - `references/k3s-minimal-platform.md`
@@ -60,21 +78,15 @@
 - `references/jenkins-install-notes.md`
 - `references/argocd-install-notes.md`
 
-适合理解：
-- k3s 平台组件怎么摆
-- Harbor / Jenkins / Argo CD 怎么初始化
-- 访问地址和命名怎么统一
+适合理解平台依赖怎么落。
 
-### 5. 如果你准备第一次发布
+### 5. 如果你准备第一次试发布
 - `references/first-release-checklist.md`
 - `references/first-release-runbook.md`
 - `references/customization-checklist.md`
 - `references/safety.md`
 
-适合理解：
-- 首次发布前要查什么
-- 失败回滚怎么约束
-- 哪些边界不能乱碰
+适合拿来做第一次发布前的检查单。
 
 ---
 
@@ -90,8 +102,8 @@ java-cicd-agent/
 └── references/
 ```
 
-### docs/
-放中文说明文档，包括：
+### `docs/`
+中文文档区，主要放：
 - 架构图
 - 调用链图
 - 职责说明
@@ -102,15 +114,15 @@ java-cicd-agent/
 - 术语表
 - 文档导航
 
-### templates/
-放请求和结果模板，包括：
+### `templates/`
+契约模板区，主要放：
 - `release-request.json`
 - `release-request.sample.local.json`
 - `release-result.json`
 - `release-result-failed.json`
 
-### scripts/
-放执行脚本，包括：
+### `scripts/`
+执行脚本区，主要放：
 - `prepare_source.sh`
 - `run_release_from_request.sh`
 - `release.sh`
@@ -123,12 +135,17 @@ java-cicd-agent/
 - `verify_deploy.sh`
 - `rollback.sh`
 
-### references/
-放参考资料、平台设计说明、接入清单、发布 Runbook 与实现笔记。
+### `references/`
+参考资料区，主要放：
+- 平台设计说明
+- 接入清单
+- Jenkins / Harbor / Argo CD 参考
+- 发布 Runbook
+- 模板与实现笔记
 
 ---
 
-## 核心模式
+## 两种发布模式
 
 ### 模式一：Direct（直发）
 直接部署到 Kubernetes：
@@ -148,27 +165,40 @@ java-cicd-agent/
 - Docker 构建
 - Push Harbor
 - 更新 GitOps 仓库中的镜像引用
-- Argo CD 同步
-- 滚动发布状态 / 健康检查验证
+- 等待 Argo CD 同步
+- rollout / 健康检查验证
 
 ---
 
-## 当前定位
+## 当前这套实现的特点
 
-当前版本适合：
-- 单服务
-- `test` 环境优先
-- 先跑通最小闭环
+目前这套实现更强调：
+
+- 契约清楚
+- 入口统一
+- 结果结构化
+- 文档 / 模板 / 脚本口径一致
+
+它适合：
+- 单服务最小闭环
+- `test` 环境优先验证
 - 作为后续增强的基础骨架
 
-当前版本还不是完整生产级系统，后续建议继续补：
+还不等于：
+- 开箱即用的生产级交付平台
+
+如果继续往生产方向走，后续建议补：
+- 更严格的外部依赖校验
 - 更稳健的 YAML 修改方式
-- 更完整的结果落盘机制
+- 更完整的结果落盘与审计
 - 更细粒度的回滚策略
-- 更真实的 Jenkins / Argo CD 集成
+- 更真实的 Jenkins / Argo CD / Harbor 集成
 
 ---
 
-## 一句话总结
+## 你最该记住的一句话
 
-上游 Agent 负责产出源码版本，Java CI/CD Agent 负责把这个版本安全地构建、发布并验证落地。
+上游 Agent 负责给出明确源码版本，
+Java CI/CD Agent 负责把这个版本构建、发布、验证，并返回结构化结果。
+
+别把“代码提交成功”误当成“发布已经成功”。
