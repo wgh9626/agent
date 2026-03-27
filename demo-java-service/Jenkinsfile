@@ -15,7 +15,7 @@ spec:
     - name: kaniko
       image: martizih/kaniko:v1.27.1
       command:
-        - /kaniko/executor
+        - /busybox/cat
       tty: true
     - name: git
       image: bitnami/git:latest
