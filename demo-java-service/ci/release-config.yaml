@@ -1,6 +1,6 @@
 service_name: demo-java-service
-build_path: .
-dockerfile_path: ./Dockerfile
+build_path: demo-java-service
+dockerfile_path: demo-java-service/Dockerfile
 image_repo: acr-dh-registry.eu-central-1.cr.aliyuncs.com/agent/demo-java-service
 gitops_repo: https://github.com/wgh9626/agent.git
 gitops_branch: main

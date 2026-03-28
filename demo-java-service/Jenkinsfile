@@ -71,10 +71,15 @@ spec:
     stage('Load Config') {
       steps {
         script {
-          def cfg = readYaml file: 'ci/release-config.yaml'
+          def configFile = 'demo-java-service/ci/release-config.yaml'
+          if (!fileExists(configFile)) {
+            error("Release config not found: ${configFile}")
+          }
+
+          def cfg = readYaml file: configFile
           env.SERVICE_NAME = cfg.service_name
-          env.BUILD_PATH = cfg.build_path ?: '.'
-          env.DOCKERFILE_PATH = cfg.dockerfile_path ?: './Dockerfile'
+          env.BUILD_PATH = cfg.build_path ?: 'demo-java-service'
+          env.DOCKERFILE_PATH = cfg.dockerfile_path ?: 'demo-java-service/Dockerfile'
           env.IMAGE_REPO = cfg.image_repo ?: ''
           env.GITOPS_REPO = cfg.gitops_repo ?: ''
           env.GITOPS_BRANCH = cfg.gitops_branch ?: 'main'
@@ -136,8 +141,8 @@ spec:
 EOF_JSON
 
               /kaniko/executor \
-                --context "${WORKSPACE}" \
-                --dockerfile "${DOCKERFILE_PATH}" \
+                --context "${WORKSPACE}/${BUILD_PATH}" \
+                --dockerfile "${WORKSPACE}/${DOCKERFILE_PATH}" \
                 --destination "${IMAGE_REPO}:${IMAGE_TAG}"
             '''
           }
@@ -178,7 +183,7 @@ EOF_JSON
     stage('Wait for Argo CD Sync') {
       steps {
         container('git') {
-          sh 'chmod +x ci/scripts/check_argocd_app.sh && ci/scripts/check_argocd_app.sh "${ARGOCD_APP}" 300'
+          sh 'chmod +x demo-java-service/ci/scripts/check_argocd_app.sh && demo-java-service/ci/scripts/check_argocd_app.sh "${ARGOCD_APP}" 300'
         }
       }
     }
