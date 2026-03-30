@@ -161,12 +161,12 @@ spec:
             withCredentials([usernamePassword(credentialsId: cfg.HARBOR_CREDENTIALS_ID, usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
               sh """
                 mkdir -p /kaniko/.docker
-                AUTH=$(printf \"%s:%s\" \"$HARBOR_USER\" \"$HARBOR_PASS\" | base64 | tr -d '\\n')
+                AUTH=\$(printf \"%s:%s\" \"\$HARBOR_USER\" \"\$HARBOR_PASS\" | base64 | tr -d '\\n')
                 cat > /kaniko/.docker/config.json <<EOF_JSON
 {
   \"auths\": {
     \"acr-dh-registry.eu-central-1.cr.aliyuncs.com\": {
-      \"auth\": \"$AUTH\"
+      \"auth\": \"\$AUTH\"
     }
   }
 }
@@ -191,12 +191,12 @@ EOF_JSON
             withCredentials([usernamePassword(credentialsId: cfg.GITOPS_GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
               sh """
                 rm -rf gitops-repo
-                git clone -b \"${cfg.GITOPS_BRANCH}\" \"https://$GIT_USER:$GIT_PASS@github.com/wgh9626/agent.git\" gitops-repo
+                git clone -b \"${cfg.GITOPS_BRANCH}\" \"https://\$GIT_USER:\$GIT_PASS@github.com/wgh9626/agent.git\" gitops-repo
                 cd gitops-repo
                 chmod +x demo-java-service/ci/scripts/update_gitops_image.sh
-                UPDATE_OUTPUT=$(demo-java-service/ci/scripts/update_gitops_image.sh \"${cfg.GITOPS_MANIFEST}\" \"${cfg.IMAGE_REPO}\" \"${cfg.IMAGE_TAG}\")
-                echo \"$UPDATE_OUTPUT\"
-                if echo \"$UPDATE_OUTPUT\" | grep -q 'No manifest change detected'; then
+                UPDATE_OUTPUT=\$(demo-java-service/ci/scripts/update_gitops_image.sh \"${cfg.GITOPS_MANIFEST}\" \"${cfg.IMAGE_REPO}\" \"${cfg.IMAGE_TAG}\")
+                echo \"\$UPDATE_OUTPUT\"
+                if echo \"\$UPDATE_OUTPUT\" | grep -q 'No manifest change detected'; then
                   echo 'No GitOps manifest change; skip commit and push'
                   exit 0
                 fi
