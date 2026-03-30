@@ -77,40 +77,44 @@ spec:
           }
 
           def cfg = readYaml file: configFile
+          def props = [
+            SERVICE_NAME             : (cfg.service_name ?: '').toString(),
+            BUILD_PATH               : (cfg.build_path ?: 'demo-java-service').toString(),
+            DOCKERFILE_PATH          : (cfg.dockerfile_path ?: 'demo-java-service/Dockerfile').toString(),
+            IMAGE_REPO               : (cfg.image_repo ?: '').toString(),
+            GITOPS_REPO              : (cfg.gitops_repo ?: '').toString(),
+            GITOPS_BRANCH            : (cfg.gitops_branch ?: 'main').toString(),
+            GITOPS_MANIFEST          : (cfg.gitops_manifest ?: '').toString(),
+            ARGOCD_APP               : (cfg.argocd_app ?: '').toString(),
+            IMAGE_TAG_STRATEGY       : (cfg.image_tag_strategy ?: 'git-build-number').toString(),
+            HARBOR_CREDENTIALS_ID    : (cfg.harbor_credentials_id ?: 'harbor').toString(),
+            GITOPS_GIT_CREDENTIALS_ID: (cfg.gitops_git_credentials_id ?: 'gitops').toString()
+          ]
+
           echo "RAW cfg.service_name='${cfg.service_name}'"
           echo "RAW cfg.image_repo='${cfg.image_repo}'"
           echo "RAW cfg.gitops_repo='${cfg.gitops_repo}'"
           echo "RAW cfg.gitops_manifest='${cfg.gitops_manifest}'"
           echo "RAW cfg.argocd_app='${cfg.argocd_app}'"
 
-          env.SERVICE_NAME = (cfg.service_name ?: '').toString()
-          env.BUILD_PATH = (cfg.build_path ?: 'demo-java-service').toString()
-          env.DOCKERFILE_PATH = (cfg.dockerfile_path ?: 'demo-java-service/Dockerfile').toString()
-          env.IMAGE_REPO = (cfg.image_repo ?: '').toString()
-          env.GITOPS_REPO = (cfg.gitops_repo ?: '').toString()
-          env.GITOPS_BRANCH = (cfg.gitops_branch ?: 'main').toString()
-          env.GITOPS_MANIFEST = (cfg.gitops_manifest ?: '').toString()
-          env.ARGOCD_APP = (cfg.argocd_app ?: '').toString()
-          env.IMAGE_TAG_STRATEGY = (cfg.image_tag_strategy ?: 'git-build-number').toString()
-          env.HARBOR_CREDENTIALS_ID = (cfg.harbor_credentials_id ?: 'harbor').toString()
-          env.GITOPS_GIT_CREDENTIALS_ID = (cfg.gitops_git_credentials_id ?: 'gitops').toString()
-
-          echo "ENV SERVICE_NAME='${env.SERVICE_NAME}'"
-          echo "ENV IMAGE_REPO='${env.IMAGE_REPO}'"
-          echo "ENV GITOPS_REPO='${env.GITOPS_REPO}'"
-          echo "ENV GITOPS_MANIFEST='${env.GITOPS_MANIFEST}'"
-          echo "ENV ARGOCD_APP='${env.ARGOCD_APP}'"
-
           container('git') {
             def shortSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-            if (env.IMAGE_TAG_STRATEGY == 'git-sha') {
-              env.IMAGE_TAG = "git-${shortSha}"
-            } else if (env.IMAGE_TAG_STRATEGY == 'git-build-number') {
-              env.IMAGE_TAG = "git-${shortSha}-${env.BUILD_NUMBER}"
+            if (props.IMAGE_TAG_STRATEGY == 'git-sha') {
+              props.IMAGE_TAG = "git-${shortSha}"
+            } else if (props.IMAGE_TAG_STRATEGY == 'git-build-number') {
+              props.IMAGE_TAG = "git-${shortSha}-${env.BUILD_NUMBER}"
             } else {
-              env.IMAGE_TAG = "build-${env.BUILD_NUMBER}"
+              props.IMAGE_TAG = "build-${env.BUILD_NUMBER}"
             }
           }
+
+          props.each { key, value ->
+            echo "PROP ${key}='${value}'"
+          }
+
+          writeFile file: '.release-config.properties', text: props.collect { key, value ->
+            "${key}=${value}"
+          }.join('\n') + '\n'
         }
       }
     }
@@ -118,12 +122,13 @@ spec:
     stage('Validate Config') {
       steps {
         script {
+          def cfg = readProperties file: '.release-config.properties'
           def required = [
-            SERVICE_NAME    : env.SERVICE_NAME,
-            IMAGE_REPO      : env.IMAGE_REPO,
-            GITOPS_REPO     : env.GITOPS_REPO,
-            GITOPS_MANIFEST : env.GITOPS_MANIFEST,
-            ARGOCD_APP      : env.ARGOCD_APP
+            SERVICE_NAME    : cfg.SERVICE_NAME,
+            IMAGE_REPO      : cfg.IMAGE_REPO,
+            GITOPS_REPO     : cfg.GITOPS_REPO,
+            GITOPS_MANIFEST : cfg.GITOPS_MANIFEST,
+            ARGOCD_APP      : cfg.ARGOCD_APP
           ]
 
           required.each { key, value ->
@@ -140,7 +145,10 @@ spec:
     stage('Build Jar') {
       steps {
         container('maven') {
-          sh 'mvn -f ${BUILD_PATH}/pom.xml clean package -DskipTests'
+          script {
+          def cfg = readProperties file: '.release-config.properties'
+          sh "mvn -f ${cfg.BUILD_PATH}/pom.xml clean package -DskipTests"
+        }
         }
       }
     }
@@ -148,7 +156,9 @@ spec:
     stage('Kaniko Build & Push') {
       steps {
         container('kaniko') {
-          withCredentials([usernamePassword(credentialsId: env.HARBOR_CREDENTIALS_ID, usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
+          script {
+            def cfg = readProperties file: '.release-config.properties'
+            withCredentials([usernamePassword(credentialsId: cfg.HARBOR_CREDENTIALS_ID, usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
             sh '''
               mkdir -p /kaniko/.docker
               AUTH=$(printf "%s:%s" "$HARBOR_USER" "$HARBOR_PASS" | base64 | tr -d '\n')
@@ -163,10 +173,11 @@ spec:
 EOF_JSON
 
               /kaniko/executor \
-                --context "${WORKSPACE}/${BUILD_PATH}" \
-                --dockerfile "${WORKSPACE}/${DOCKERFILE_PATH}" \
-                --destination "${IMAGE_REPO}:${IMAGE_TAG}"
+                --context "${WORKSPACE}/${cfg.BUILD_PATH}" \
+                --dockerfile "${WORKSPACE}/${cfg.DOCKERFILE_PATH}" \
+                --destination "${cfg.IMAGE_REPO}:${cfg.IMAGE_TAG}"
             '''
+          }
           }
         }
       }
@@ -175,13 +186,15 @@ EOF_JSON
     stage('Update GitOps Repo') {
       steps {
         container('git') {
-          withCredentials([usernamePassword(credentialsId: env.GITOPS_GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+          script {
+            def cfg = readProperties file: '.release-config.properties'
+            withCredentials([usernamePassword(credentialsId: cfg.GITOPS_GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
             sh '''
               rm -rf gitops-repo
-              git clone -b "${GITOPS_BRANCH}" "https://${GIT_USER}:${GIT_PASS}@github.com/wgh9626/agent.git" gitops-repo
+              git clone -b "${cfg.GITOPS_BRANCH}" "https://${GIT_USER}:${GIT_PASS}@github.com/wgh9626/agent.git" gitops-repo
               cd gitops-repo
               chmod +x demo-java-service/ci/scripts/update_gitops_image.sh
-              UPDATE_OUTPUT=$(demo-java-service/ci/scripts/update_gitops_image.sh "${GITOPS_MANIFEST}" "${IMAGE_REPO}" "${IMAGE_TAG}")
+              UPDATE_OUTPUT=$(demo-java-service/ci/scripts/update_gitops_image.sh "${cfg.GITOPS_MANIFEST}" "${cfg.IMAGE_REPO}" "${cfg.IMAGE_TAG}")
               echo "$UPDATE_OUTPUT"
               if echo "$UPDATE_OUTPUT" | grep -q 'No manifest change detected'; then
                 echo 'No GitOps manifest change; skip commit and push'
@@ -189,14 +202,15 @@ EOF_JSON
               fi
               git config user.name "jenkins"
               git config user.email "jenkins@example.local"
-              git add "${GITOPS_MANIFEST}"
+              git add "${cfg.GITOPS_MANIFEST}"
               git diff --cached --quiet && {
                 echo 'No staged changes; skip commit and push'
                 exit 0
               }
-              git commit -m "release(${SERVICE_NAME}): update image to ${IMAGE_TAG}"
-              git push origin "${GITOPS_BRANCH}"
+              git commit -m "release(${cfg.SERVICE_NAME}): update image to ${cfg.IMAGE_TAG}"
+              git push origin "${cfg.GITOPS_BRANCH}"
             '''
+          }
           }
         }
       }
@@ -205,7 +219,10 @@ EOF_JSON
     stage('Wait for Argo CD Sync') {
       steps {
         container('git') {
-          sh 'chmod +x demo-java-service/ci/scripts/check_argocd_app.sh && demo-java-service/ci/scripts/check_argocd_app.sh "${ARGOCD_APP}" 300'
+          script {
+          def cfg = readProperties file: '.release-config.properties'
+          sh "chmod +x demo-java-service/ci/scripts/check_argocd_app.sh && demo-java-service/ci/scripts/check_argocd_app.sh '${cfg.ARGOCD_APP}' 300"
+        }
         }
       }
     }
