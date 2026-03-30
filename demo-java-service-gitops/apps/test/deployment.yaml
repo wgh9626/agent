@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: demo-java-service
-          image: acr-dh-registry.eu-central-1.cr.aliyuncs.com/agent/demo-java-service:git-a436080-19
+          image: acr-dh-registry.eu-central-1.cr.aliyuncs.com/agent/demo-java-service:git-62cf0c2-20
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
