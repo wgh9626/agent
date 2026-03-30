@@ -7,5 +7,5 @@ gitops_branch: main
 gitops_manifest: demo-java-service-gitops/apps/test/deployment.yaml
 argocd_app: agent
 image_tag_strategy: git-build-number
-harbor_credentials_id: harbor
-gitops_git_credentials_id: gitops
+harbor_credentials_id: 4e8855e7-f023-41a8-9298-81c1a267b691
+gitops_git_credentials_id: 9f632f8c-59f9-4482-85f5-7f23b7925f56
