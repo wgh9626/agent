@@ -159,25 +159,25 @@ spec:
           script {
             def cfg = readProperties file: '.release-config.properties'
             withCredentials([usernamePassword(credentialsId: cfg.HARBOR_CREDENTIALS_ID, usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
-            sh '''
-              mkdir -p /kaniko/.docker
-              AUTH=$(printf "%s:%s" "$HARBOR_USER" "$HARBOR_PASS" | base64 | tr -d '\n')
-              cat > /kaniko/.docker/config.json <<EOF_JSON
+              sh """
+                mkdir -p /kaniko/.docker
+                AUTH=$(printf \"%s:%s\" \"$HARBOR_USER\" \"$HARBOR_PASS\" | base64 | tr -d '\\n')
+                cat > /kaniko/.docker/config.json <<EOF_JSON
 {
-  "auths": {
-    "acr-dh-registry.eu-central-1.cr.aliyuncs.com": {
-      "auth": "$AUTH"
+  \"auths\": {
+    \"acr-dh-registry.eu-central-1.cr.aliyuncs.com\": {
+      \"auth\": \"$AUTH\"
     }
   }
 }
 EOF_JSON
 
-              /kaniko/executor \
-                --context "${WORKSPACE}/${cfg.BUILD_PATH}" \
-                --dockerfile "${WORKSPACE}/${cfg.DOCKERFILE_PATH}" \
-                --destination "${cfg.IMAGE_REPO}:${cfg.IMAGE_TAG}"
-            '''
-          }
+                /kaniko/executor \
+                  --context \"${env.WORKSPACE}/${cfg.BUILD_PATH}\" \
+                  --dockerfile \"${env.WORKSPACE}/${cfg.DOCKERFILE_PATH}\" \
+                  --destination \"${cfg.IMAGE_REPO}:${cfg.IMAGE_TAG}\"
+              """
+            }
           }
         }
       }
@@ -189,28 +189,28 @@ EOF_JSON
           script {
             def cfg = readProperties file: '.release-config.properties'
             withCredentials([usernamePassword(credentialsId: cfg.GITOPS_GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-            sh '''
-              rm -rf gitops-repo
-              git clone -b "${cfg.GITOPS_BRANCH}" "https://${GIT_USER}:${GIT_PASS}@github.com/wgh9626/agent.git" gitops-repo
-              cd gitops-repo
-              chmod +x demo-java-service/ci/scripts/update_gitops_image.sh
-              UPDATE_OUTPUT=$(demo-java-service/ci/scripts/update_gitops_image.sh "${cfg.GITOPS_MANIFEST}" "${cfg.IMAGE_REPO}" "${cfg.IMAGE_TAG}")
-              echo "$UPDATE_OUTPUT"
-              if echo "$UPDATE_OUTPUT" | grep -q 'No manifest change detected'; then
-                echo 'No GitOps manifest change; skip commit and push'
-                exit 0
-              fi
-              git config user.name "jenkins"
-              git config user.email "jenkins@example.local"
-              git add "${cfg.GITOPS_MANIFEST}"
-              git diff --cached --quiet && {
-                echo 'No staged changes; skip commit and push'
-                exit 0
-              }
-              git commit -m "release(${cfg.SERVICE_NAME}): update image to ${cfg.IMAGE_TAG}"
-              git push origin "${cfg.GITOPS_BRANCH}"
-            '''
-          }
+              sh """
+                rm -rf gitops-repo
+                git clone -b \"${cfg.GITOPS_BRANCH}\" \"https://$GIT_USER:$GIT_PASS@github.com/wgh9626/agent.git\" gitops-repo
+                cd gitops-repo
+                chmod +x demo-java-service/ci/scripts/update_gitops_image.sh
+                UPDATE_OUTPUT=$(demo-java-service/ci/scripts/update_gitops_image.sh \"${cfg.GITOPS_MANIFEST}\" \"${cfg.IMAGE_REPO}\" \"${cfg.IMAGE_TAG}\")
+                echo \"$UPDATE_OUTPUT\"
+                if echo \"$UPDATE_OUTPUT\" | grep -q 'No manifest change detected'; then
+                  echo 'No GitOps manifest change; skip commit and push'
+                  exit 0
+                fi
+                git config user.name \"jenkins\"
+                git config user.email \"jenkins@example.local\"
+                git add \"${cfg.GITOPS_MANIFEST}\"
+                git diff --cached --quiet && {
+                  echo 'No staged changes; skip commit and push'
+                  exit 0
+                }
+                git commit -m \"release(${cfg.SERVICE_NAME}): update image to ${cfg.IMAGE_TAG}\"
+                git push origin \"${cfg.GITOPS_BRANCH}\"
+              """
+            }
           }
         }
       }
