@@ -105,13 +105,23 @@ spec:
 
     stage('Validate Config') {
       steps {
-        sh '''
-          test -n "$SERVICE_NAME"
-          test -n "$IMAGE_REPO"
-          test -n "$GITOPS_REPO"
-          test -n "$GITOPS_MANIFEST"
-          test -n "$ARGOCD_APP"
-        '''
+        script {
+          def required = [
+            SERVICE_NAME    : env.SERVICE_NAME,
+            IMAGE_REPO      : env.IMAGE_REPO,
+            GITOPS_REPO     : env.GITOPS_REPO,
+            GITOPS_MANIFEST : env.GITOPS_MANIFEST,
+            ARGOCD_APP      : env.ARGOCD_APP
+          ]
+
+          required.each { key, value ->
+            def rendered = value == null ? 'null' : value.toString()
+            echo "CONFIG ${key}='${rendered}'"
+            if (!rendered.trim() || rendered == 'null') {
+              error("Missing required config: ${key}")
+            }
+          }
+        }
       }
     }
 
