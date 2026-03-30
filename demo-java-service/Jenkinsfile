@@ -77,17 +77,29 @@ spec:
           }
 
           def cfg = readYaml file: configFile
-          env.SERVICE_NAME = cfg.service_name
-          env.BUILD_PATH = cfg.build_path ?: 'demo-java-service'
-          env.DOCKERFILE_PATH = cfg.dockerfile_path ?: 'demo-java-service/Dockerfile'
-          env.IMAGE_REPO = cfg.image_repo ?: ''
-          env.GITOPS_REPO = cfg.gitops_repo ?: ''
-          env.GITOPS_BRANCH = cfg.gitops_branch ?: 'main'
-          env.GITOPS_MANIFEST = cfg.gitops_manifest ?: ''
-          env.ARGOCD_APP = cfg.argocd_app ?: ''
-          env.IMAGE_TAG_STRATEGY = cfg.image_tag_strategy ?: 'git-build-number'
-          env.HARBOR_CREDENTIALS_ID = cfg.harbor_credentials_id ?: 'harbor'
-          env.GITOPS_GIT_CREDENTIALS_ID = cfg.gitops_git_credentials_id ?: 'gitops'
+          echo "RAW cfg.service_name='${cfg.service_name}'"
+          echo "RAW cfg.image_repo='${cfg.image_repo}'"
+          echo "RAW cfg.gitops_repo='${cfg.gitops_repo}'"
+          echo "RAW cfg.gitops_manifest='${cfg.gitops_manifest}'"
+          echo "RAW cfg.argocd_app='${cfg.argocd_app}'"
+
+          env.SERVICE_NAME = (cfg.service_name ?: '').toString()
+          env.BUILD_PATH = (cfg.build_path ?: 'demo-java-service').toString()
+          env.DOCKERFILE_PATH = (cfg.dockerfile_path ?: 'demo-java-service/Dockerfile').toString()
+          env.IMAGE_REPO = (cfg.image_repo ?: '').toString()
+          env.GITOPS_REPO = (cfg.gitops_repo ?: '').toString()
+          env.GITOPS_BRANCH = (cfg.gitops_branch ?: 'main').toString()
+          env.GITOPS_MANIFEST = (cfg.gitops_manifest ?: '').toString()
+          env.ARGOCD_APP = (cfg.argocd_app ?: '').toString()
+          env.IMAGE_TAG_STRATEGY = (cfg.image_tag_strategy ?: 'git-build-number').toString()
+          env.HARBOR_CREDENTIALS_ID = (cfg.harbor_credentials_id ?: 'harbor').toString()
+          env.GITOPS_GIT_CREDENTIALS_ID = (cfg.gitops_git_credentials_id ?: 'gitops').toString()
+
+          echo "ENV SERVICE_NAME='${env.SERVICE_NAME}'"
+          echo "ENV IMAGE_REPO='${env.IMAGE_REPO}'"
+          echo "ENV GITOPS_REPO='${env.GITOPS_REPO}'"
+          echo "ENV GITOPS_MANIFEST='${env.GITOPS_MANIFEST}'"
+          echo "ENV ARGOCD_APP='${env.ARGOCD_APP}'"
 
           container('git') {
             def shortSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
