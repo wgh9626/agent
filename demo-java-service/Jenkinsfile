@@ -26,13 +26,6 @@ spec:
         - -c
         - cat
       tty: true
-    - name: kubectl
-      image: alpine/kubectl:1.34.2
-      command:
-        - /bin/sh
-        - -c
-        - cat
-      tty: true
 '''
     }
   }
@@ -59,8 +52,6 @@ spec:
     GITOPS_MANIFEST = ''
     HARBOR_CREDENTIALS_ID = 'harbor'
     GITOPS_GIT_CREDENTIALS_ID = 'gitops'
-    K8S_NAMESPACE = 'test'
-    DEPLOYMENT_NAME = 'demo-java-service'
   }
 
   stages {
@@ -94,8 +85,6 @@ spec:
             GITOPS_BRANCH            : (cfg.gitops_branch ?: 'main').toString(),
             GITOPS_MANIFEST          : (cfg.gitops_manifest ?: '').toString(),
             ARGOCD_APP               : (cfg.argocd_app ?: '').toString(),
-            K8S_NAMESPACE            : (cfg.k8s_namespace ?: 'test').toString(),
-            DEPLOYMENT_NAME          : (cfg.deployment_name ?: (cfg.service_name ?: 'demo-java-service')).toString(),
             IMAGE_TAG_STRATEGY       : (cfg.image_tag_strategy ?: 'git-build-number').toString(),
             HARBOR_CREDENTIALS_ID    : (cfg.harbor_credentials_id ?: 'harbor').toString(),
             GITOPS_GIT_CREDENTIALS_ID: (cfg.gitops_git_credentials_id ?: 'gitops').toString()
@@ -138,8 +127,7 @@ spec:
             IMAGE_REPO      : cfg.IMAGE_REPO,
             GITOPS_REPO     : cfg.GITOPS_REPO,
             GITOPS_MANIFEST : cfg.GITOPS_MANIFEST,
-            K8S_NAMESPACE   : cfg.K8S_NAMESPACE,
-            DEPLOYMENT_NAME : cfg.DEPLOYMENT_NAME
+            ARGOCD_APP      : cfg.ARGOCD_APP
           ]
 
           required.each { key, value ->
@@ -227,15 +215,6 @@ EOF_JSON
       }
     }
 
-    stage('Verify Kubernetes Deployment') {
-      steps {
-        container('kubectl') {
-          script {
-          def cfg = readProperties file: '.release-config.properties'
-          sh "chmod +x demo-java-service/ci/scripts/verify_k8s_deploy.sh && TIMEOUT_SECONDS=300 demo-java-service/ci/scripts/verify_k8s_deploy.sh '${cfg.K8S_NAMESPACE}' '${cfg.DEPLOYMENT_NAME}' '${cfg.IMAGE_REPO}:${cfg.IMAGE_TAG}'"
-        }
-        }
-      }
-    }
+
   }
 }
